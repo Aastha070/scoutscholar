@@ -1,3 +1,47 @@
+# ScoutScholar
+
+An AI-powered study abroad profile evaluator that uses conversational AI to help students find realistic university matches.
+
+## The Problem
+Students are uncertain about which universities to apply to. Some underestimate their profile strength. Others set unrealistic goals. They need an insightful advisor, not a form.
+
+## The Solution
+ScoutScholar asks insightful questions through a conversational AI interface (not a form). It detects behavioral patterns (Underestimator, Overreacher, Undecided) and provides personalized university recommendations.
+
+## Features
+- Conversational AI chat interface with a friendly mascot (Scout)
+- Pattern detection (CGPA + ambition → behavioral insight)
+- Personalized university recommendations
+- User authentication & profile persistence
+- Mobile-responsive design
+
+## Tech Stack
+- **Frontend:** React, Tailwind CSS
+- **Backend:** Supabase (PostgreSQL, Auth)
+- **AI:** Claude API (Anthropic)
+- **Deployment:** Vercel
+
+## Live Demo
+[Coming soon]
+
+## How to Run Locally
+```bash
+git clone https://github.com/YOUR_USERNAME/scoutscholar.git
+cd scoutscholar
+npm install
+npm start
+```
+
+## Design Thinking
+This product was designed with three behavioral user patterns in mind:
+- **Underestimators:** Strong profile, low confidence → reframe positively
+- **Overreachers:** Ambitious but unrealistic → honest redirection with warmth
+- **Undecided:** Confused about goals → discover through conversation
+
+The AI dynamically adjusts tone based on the detected pattern.
+
+## Building This
+Aastha is learning full-stack product development, bridging design → code. This project combines UX thinking with React, APIs, and databases to ship a real product.<<<<<<< HEAD
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -68,3 +112,6 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+# scoutscholar
+AI-powered study abroad profile evaluator with conversational AI. Built with React, Supabase, Claude API.
+e70d12f3b4e7881fffd733d7f2ad68b16efca1fd
