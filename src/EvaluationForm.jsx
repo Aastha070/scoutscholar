@@ -55,6 +55,7 @@ function EvaluationForm() {
   const [isMajorOther, setIsMajorOther] = useState(false);
   const [isOtherProgramChecked, setIsOtherProgramChecked] = useState(false);
   const [otherProgramText, setOtherProgramText] = useState("");
+  const [validationError, setValidationError] = useState(null);
 
   const handleMajorSelectChange = (e) => {
     const value = e.target.value;
@@ -120,25 +121,101 @@ function EvaluationForm() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const getMissingFields = (data) => {
+    const missing = [];
+
+    if (!data.degree) missing.push("Degree");
+    if (!data.institution || !data.institution.trim()) missing.push("Institution");
+    if (!data.major || !data.major.trim()) missing.push("Major");
+
+    const cgpaNum = Number(data.cgpa);
+    if (
+      data.cgpa === "" ||
+      data.cgpa === null ||
+      data.cgpa === undefined ||
+      Number.isNaN(cgpaNum) ||
+      cgpaNum < 0 ||
+      cgpaNum > 10
+    ) {
+      missing.push("CGPA");
+    }
+
+    if (!data.destination) missing.push("Destination");
+    if (!data.target_intake) missing.push("Target Intake");
+
+    if (
+      !data.target_programs ||
+      data.target_programs.length < 1 ||
+      data.target_programs.length > MAX_PROGRAMS
+    ) {
+      missing.push("Target Programs");
+    }
+
+    if (!data.test_score.status) {
+      missing.push("Test Score");
+    } else if (data.test_score.type === "GRE" || data.test_score.type === "GMAT") {
+      const scoreNum = Number(data.test_score.score);
+      if (
+        data.test_score.score === null ||
+        data.test_score.score === undefined ||
+        data.test_score.score === "" ||
+        Number.isNaN(scoreNum)
+      ) {
+        missing.push("Test Score");
+      }
+    }
+
+    return missing;
+  };
+
+  const submitEvaluation = async (data) => {
     setStatus("loading");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
     try {
       const res = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
+        signal: controller.signal,
       });
+
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
+
       const responseJson = await res.json();
       setResults(responseJson);
       setStatus("idle");
     } catch (error) {
+      if (error.name === "AbortError") {
+        console.error("Request timed out after 15s", error);
+      } else {
+        console.error(error);
+      }
       setStatus("error");
-      console.error(error);
+    } finally {
+      clearTimeout(timeoutId);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const missingFields = getMissingFields(formData);
+    if (missingFields.length > 0) {
+      setValidationError(`Please fill in: ${missingFields.join(", ")}.`);
+      return;
+    }
+    setValidationError(null);
+
+    await submitEvaluation(formData);
+  };
+
+  const handleTryAgain = () => {
+    submitEvaluation(formData);
   };
 
   const showTestScoreInput =
@@ -303,12 +380,30 @@ function EvaluationForm() {
         )}
       </fieldset>
 
+      {validationError && (
+        <p style={{ color: "red" }} role="alert">
+          {validationError}
+        </p>
+      )}
+
       <button type="submit">Get Your Evaluation</button>
       </form>
 
       <div>
-        {status === "loading" && <p>Evaluating…</p>}
-        {status === "error" && <p>Something went wrong.</p>}
+        {status === "loading" && (
+          <p>Evaluating your profile — this takes about 20–30 seconds…</p>
+        )}
+        {status === "error" && (
+          <div role="alert">
+            <p>
+              We're having trouble evaluating your profile right now. Please
+              try again in a moment.
+            </p>
+            <button type="button" onClick={handleTryAgain}>
+              Try Again
+            </button>
+          </div>
+        )}
         {results && <ResultCards results={results} />}
       </div>
     </>
