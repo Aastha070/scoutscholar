@@ -1,6 +1,18 @@
 import { useState } from "react";
+import {
+  GraduationCap,
+  Star,
+  Landmark,
+  BookOpen,
+  Globe,
+  Calendar,
+  FileCheck,
+  ArrowRight,
+} from "lucide-react";
 import { useStore } from "./store";
 import ResultCards from "./ResultCards";
+import landingBg from "./assets/landing-bg.png";
+import scoutGreeting from "./assets/scout-greeting.png";
 
 const DEGREE_OPTIONS = ["Bachelor's", "Master's", "Diploma"];
 
@@ -44,6 +56,24 @@ const TEST_SCORE_OPTIONS = [
   { label: "GMAT", status: "taken", type: "GMAT" },
 ];
 
+const inputBase =
+  "w-full rounded-lg border-[0.5px] border-[#636363] pl-9 pr-3 py-2 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:ring-1 focus:ring-[#7B5CF0]";
+
+const labelBase = "flex items-center gap-1 font-['Inter'] font-medium text-sm text-[#272728]";
+
+function RequiredAsterisk() {
+  return <span className="text-[#e31111]">*</span>;
+}
+
+function IconField({ icon: Icon, iconColorClass, children }) {
+  return (
+    <div className="relative">
+      <Icon className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${iconColorClass}`} />
+      {children}
+    </div>
+  );
+}
+
 function EvaluationForm() {
   const formData = useStore((state) => state.formData);
   const setFormField = useStore((state) => state.setFormField);
@@ -56,6 +86,8 @@ function EvaluationForm() {
   const [isOtherProgramChecked, setIsOtherProgramChecked] = useState(false);
   const [otherProgramText, setOtherProgramText] = useState("");
   const [validationError, setValidationError] = useState(null);
+  const [greetingFailed, setGreetingFailed] = useState(false);
+  const [bgFailed, setBgFailed] = useState(false);
 
   const handleMajorSelectChange = (e) => {
     const value = e.target.value;
@@ -222,191 +254,360 @@ function EvaluationForm() {
     formData.test_score.type === "GRE" || formData.test_score.type === "GMAT";
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="degree">Education Degree</label>
-        <select
-          id="degree"
-          value={formData.degree}
-          onChange={(e) => setFormField("degree", e.target.value)}
-        >
-          <option value="">Select degree</option>
-          {DEGREE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="institution">Institution Name</label>
-        <input
-          id="institution"
-          type="text"
-          value={formData.institution}
-          onChange={(e) => setFormField("institution", e.target.value)}
+    <div className="relative min-h-screen bg-[#FCFCFF] font-['Inter'] overflow-hidden">
+      {!bgFailed && (
+        <img
+          src={landingBg}
+          alt=""
+          aria-hidden="true"
+          className="fixed inset-0 w-full h-full object-cover opacity-20 pointer-events-none select-none"
+          onError={() => setBgFailed(true)}
         />
-      </div>
-
-      <div>
-        <label htmlFor="major">Major/Field of Study</label>
-        <select
-          id="major"
-          value={isMajorOther ? "Other" : formData.major}
-          onChange={handleMajorSelectChange}
-        >
-          <option value="">Select major</option>
-          {MAJOR_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        {isMajorOther && (
-          <input
-            type="text"
-            placeholder="Enter your major"
-            value={formData.major}
-            onChange={(e) => setFormField("major", e.target.value)}
-          />
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="cgpa">CGPA</label>
-        <input
-          id="cgpa"
-          type="number"
-          step="0.1"
-          min="0"
-          max="10"
-          value={formData.cgpa}
-          onChange={(e) => setFormField("cgpa", e.target.value)}
-        />
-        <p>Enter your CGPA on a 10-point scale.</p>
-      </div>
-
-      <div>
-        <label htmlFor="destination">Preferred Destination</label>
-        <select
-          id="destination"
-          value={formData.destination}
-          onChange={(e) => setFormField("destination", e.target.value)}
-        >
-          <option value="">Select destination</option>
-          {DESTINATION_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <fieldset>
-        <legend>Targeted Programs (choose 1-3)</legend>
-        {PROGRAM_OPTIONS.map((option) => {
-          const isChecked =
-            option === "Other"
-              ? isOtherProgramChecked
-              : formData.target_programs.includes(option);
-          const disableUnchecked =
-            !isChecked && formData.target_programs.length >= MAX_PROGRAMS;
-
-          return (
-            <div key={option}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  disabled={disableUnchecked}
-                  onChange={handleProgramCheckboxChange(option)}
-                />
-                {option}
-              </label>
-              {option === "Other" && isOtherProgramChecked && (
-                <input
-                  type="text"
-                  placeholder="Enter your target program"
-                  value={otherProgramText}
-                  onChange={handleOtherProgramTextChange}
-                />
-              )}
-            </div>
-          );
-        })}
-      </fieldset>
-
-      <div>
-        <label htmlFor="target_intake">Target Intake</label>
-        <select
-          id="target_intake"
-          value={formData.target_intake}
-          onChange={(e) => setFormField("target_intake", e.target.value)}
-        >
-          <option value="">Select intake</option>
-          {INTAKE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <fieldset>
-        <legend>Standardized Test Score</legend>
-        {TEST_SCORE_OPTIONS.map((option) => (
-          <label key={option.label}>
-            <input
-              type="radio"
-              name="test_score_option"
-              checked={
-                formData.test_score.status === option.status &&
-                formData.test_score.type === option.type
-              }
-              onChange={handleTestScoreOptionChange(option)}
-            />
-            {option.label}
-          </label>
-        ))}
-        {showTestScoreInput && (
-          <input
-            type="number"
-            placeholder="Score"
-            value={formData.test_score.score ?? ""}
-            onChange={handleTestScoreValueChange}
-          />
-        )}
-      </fieldset>
-
-      {validationError && (
-        <p style={{ color: "red" }} role="alert">
-          {validationError}
-        </p>
       )}
 
-      <button type="submit">Get Your Evaluation</button>
-      </form>
+      <div className="relative z-10 px-6 py-10">
+        <div className="flex justify-end mb-6 max-w-[1100px] mx-auto">
+          <span className="font-['Inter'] text-3xl text-[#7B5CF0] tracking-[-1px]">
+            ScoutScholar
+          </span>
+        </div>
 
-      <div>
-        {status === "loading" && (
-          <p>Evaluating your profile — this takes about 20–30 seconds…</p>
-        )}
-        {status === "error" && (
-          <div role="alert">
-            <p>
-              We're having trouble evaluating your profile right now. Please
-              try again in a moment.
-            </p>
-            <button type="button" onClick={handleTryAgain}>
-              Try Again
-            </button>
+        <div className="max-w-[1100px] mx-auto rounded-xl shadow-[0_8px_24px_rgba(26,22,37,0.1)] bg-gradient-to-br from-[rgba(244,244,244,0.38)] to-[rgba(248,247,255,0.38)] p-8">
+          <div className="flex items-center gap-4 mb-8">
+            {!greetingFailed ? (
+              <img
+                src={scoutGreeting}
+                alt="Scout"
+                className="w-[72px] h-[72px] rounded-full object-cover"
+                onError={() => setGreetingFailed(true)}
+              />
+            ) : (
+              <div className="w-[72px] h-[72px] rounded-full bg-[#E4DCFC] flex-shrink-0" />
+            )}
+            <div className="bg-white border border-[#7B5CF0] rounded-xl shadow-sm p-3">
+              <p className="text-sm text-[#454545]">
+                Let's get your journey planned, we are in this together 💪
+              </p>
+            </div>
           </div>
-        )}
-        {results && <ResultCards results={results} />}
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              {/* Card 1: Education Details */}
+              <div className="rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F2F0FE] to-white">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-full bg-[#C8BFF9] flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-5 h-5 text-[#7B5CF0]" />
+                  </div>
+                  <h3 className="font-['Inter'] font-semibold text-xl text-[#272728]">
+                    1. Education Details
+                  </h3>
+                </div>
+                <p className="text-sm text-[#636363] mb-4">
+                  Tell us about your current or more recent education
+                </p>
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="degree" className={labelBase}>
+                      Education Degree
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={GraduationCap} iconColorClass="text-[#7B5CF0]">
+                        <select
+                          id="degree"
+                          value={formData.degree}
+                          onChange={(e) => setFormField("degree", e.target.value)}
+                          className={inputBase}
+                        >
+                          <option value="">Select degree</option>
+                          {DEGREE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </IconField>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="cgpa" className={labelBase}>
+                      CGPA
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={Star} iconColorClass="text-[#7B5CF0]">
+                        <input
+                          id="cgpa"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="10"
+                          placeholder="e.g 8.5"
+                          value={formData.cgpa}
+                          onChange={(e) => setFormField("cgpa", e.target.value)}
+                          className={inputBase}
+                        />
+                      </IconField>
+                    </div>
+                    <p className="text-xs text-[#636363] mt-1">
+                      Enter your CGPA on a 10-point scale.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="institution" className={labelBase}>
+                      Institution Name
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={Landmark} iconColorClass="text-[#7B5CF0]">
+                        <input
+                          id="institution"
+                          type="text"
+                          value={formData.institution}
+                          onChange={(e) => setFormField("institution", e.target.value)}
+                          className={inputBase}
+                        />
+                      </IconField>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Study Abroad Goals */}
+              <div className="rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F8F0E0] to-white">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-full bg-[#F5D38F] flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <h3 className="font-['Inter'] font-semibold text-xl text-[#272728]">
+                    2. Study Abroad Goals
+                  </h3>
+                </div>
+                <p className="text-sm text-[#636363] mb-4">
+                  Share the details regarding your study abroad goal.
+                </p>
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="major" className={labelBase}>
+                      Major/Field of Study
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={BookOpen} iconColorClass="text-amber-600">
+                        <select
+                          id="major"
+                          value={isMajorOther ? "Other" : formData.major}
+                          onChange={handleMajorSelectChange}
+                          className={inputBase}
+                        >
+                          <option value="">Select major</option>
+                          {MAJOR_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </IconField>
+                    </div>
+                    {isMajorOther && (
+                      <input
+                        type="text"
+                        placeholder="Enter your major"
+                        value={formData.major}
+                        onChange={(e) => setFormField("major", e.target.value)}
+                        className={`${inputBase} pl-3 mt-2`}
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="destination" className={labelBase}>
+                      Preferred Destination
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={Globe} iconColorClass="text-amber-600">
+                        <select
+                          id="destination"
+                          value={formData.destination}
+                          onChange={(e) => setFormField("destination", e.target.value)}
+                          className={inputBase}
+                        >
+                          <option value="">Select destination</option>
+                          {DESTINATION_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </IconField>
+                    </div>
+                  </div>
+
+                  <fieldset>
+                    <legend className={labelBase}>
+                      Targeted Programs (choose 1-3)
+                      <RequiredAsterisk />
+                    </legend>
+                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+                      {PROGRAM_OPTIONS.map((option) => {
+                        const isChecked =
+                          option === "Other"
+                            ? isOtherProgramChecked
+                            : formData.target_programs.includes(option);
+                        const disableUnchecked =
+                          !isChecked && formData.target_programs.length >= MAX_PROGRAMS;
+
+                        return (
+                          <div key={option}>
+                            <label className="flex items-center gap-2 text-sm text-[#272728]">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={disableUnchecked}
+                                onChange={handleProgramCheckboxChange(option)}
+                                className="accent-[#7B5CF0] w-4 h-4"
+                              />
+                              {option}
+                            </label>
+                            {option === "Other" && isOtherProgramChecked && (
+                              <input
+                                type="text"
+                                placeholder="Enter your target program"
+                                value={otherProgramText}
+                                onChange={handleOtherProgramTextChange}
+                                className={`${inputBase} pl-3 mt-2`}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  <div>
+                    <label htmlFor="target_intake" className={labelBase}>
+                      Target Intake
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-1">
+                      <IconField icon={Calendar} iconColorClass="text-amber-600">
+                        <select
+                          id="target_intake"
+                          value={formData.target_intake}
+                          onChange={(e) => setFormField("target_intake", e.target.value)}
+                          className={inputBase}
+                        >
+                          <option value="">Select intake</option>
+                          {INTAKE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </IconField>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Scores bar + Submit button */}
+            <div className="mt-6 flex flex-col md:flex-row gap-4 items-stretch">
+              <fieldset className="flex-1 rounded-xl bg-[#F2F0FE] p-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 flex-wrap">
+                  <legend className="flex items-center gap-2 font-['Inter'] font-semibold text-lg text-[#272728]">
+                    <FileCheck className="w-5 h-5 text-[#7B5CF0]" />
+                    Test Scores
+                  </legend>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {TEST_SCORE_OPTIONS.map((option) => (
+                      <label
+                        key={option.label}
+                        className="flex items-center gap-2 text-sm text-[#272728]"
+                      >
+                        <input
+                          type="radio"
+                          name="test_score_option"
+                          checked={
+                            formData.test_score.status === option.status &&
+                            formData.test_score.type === option.type
+                          }
+                          onChange={handleTestScoreOptionChange(option)}
+                          className="accent-[#7B5CF0] w-4 h-4"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                    {showTestScoreInput && (
+                      <input
+                        type="number"
+                        placeholder="e.g 330"
+                        value={formData.test_score.score ?? ""}
+                        onChange={handleTestScoreValueChange}
+                        className="w-28 rounded-lg border-[0.5px] border-[#636363] px-3 py-2 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:ring-1 focus:ring-[#7B5CF0]"
+                      />
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+
+              <button
+                type="submit"
+                className="bg-[#7B5CF0] text-white font-['Inter'] font-semibold text-xl rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer border-none whitespace-nowrap"
+              >
+                Get Evaluation <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {validationError && (
+              <p
+                className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600"
+                role="alert"
+              >
+                {validationError}
+              </p>
+            )}
+          </form>
+        </div>
+
+        <div className="max-w-[1100px] mx-auto">
+          {status === "loading" && (
+            <p className="mt-6 text-center text-[#7B5CF0] font-medium">
+              Evaluating your profile — this takes about 20–30 seconds…
+            </p>
+          )}
+          {status === "error" && (
+            <div
+              role="alert"
+              className="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-6 text-center"
+            >
+              <p className="text-[#454545]">
+                We're having trouble evaluating your profile right now. Please
+                try again in a moment.
+              </p>
+              <button
+                type="button"
+                onClick={handleTryAgain}
+                className="mt-4 bg-[#7B5CF0] text-white font-['Inter'] font-semibold rounded-xl px-6 py-3 cursor-pointer border-none"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+          {results && (
+            <div className="mt-6">
+              <ResultCards results={results} />
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
