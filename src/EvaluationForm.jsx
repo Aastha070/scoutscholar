@@ -49,15 +49,12 @@ const MAX_PROGRAMS = 3;
 
 const INTAKE_OPTIONS = ["Fall 2026", "Spring 2027", "Fall 2027"];
 
-const TEST_SCORE_OPTIONS = [
-  { label: "Haven't taken it yet", status: "not_taken", type: "" },
-  { label: "Planning to take it", status: "planned", type: "" },
-  { label: "GRE", status: "taken", type: "GRE" },
-  { label: "GMAT", status: "taken", type: "GMAT" },
-];
+const TEST_TYPE_OPTIONS = ["IELTS", "GRE", "GMAT"];
+
+const GRAD_YEAR_OPTIONS = Array.from({ length: 2030 - 2018 + 1 }, (_, i) => 2018 + i);
 
 const inputBase =
-  "w-full rounded-lg border-[0.5px] border-[#636363] pl-9 pr-3 py-2 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:ring-1 focus:ring-[#7B5CF0]";
+  "rounded-lg border border-[#D9D6E8] pr-3 py-2.5 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:border-[#7B5CF0]";
 
 const labelBase = "flex items-center gap-1 font-['Inter'] font-medium text-sm text-[#272728]";
 
@@ -100,8 +97,10 @@ function EvaluationForm() {
     }
   };
 
-  const handleProgramCheckboxChange = (option) => (e) => {
-    const checked = e.target.checked;
+  const handleProgramChipToggle = (option) => () => {
+    const isCurrentlyChecked =
+      option === "Other" ? isOtherProgramChecked : formData.target_programs.includes(option);
+    const checked = !isCurrentlyChecked;
     const current = formData.target_programs;
 
     if (option === "Other") {
@@ -141,8 +140,12 @@ function EvaluationForm() {
     );
   };
 
-  const handleTestScoreOptionChange = (option) => () => {
-    setFormField("test_score", { type: option.type, score: null, status: option.status });
+  const handleTestTakenChange = (taken) => () => {
+    setFormField("test_score", { taken, type: "", score: null });
+  };
+
+  const handleTestTypeChange = (e) => {
+    setFormField("test_score", { ...formData.test_score, type: e.target.value });
   };
 
   const handleTestScoreValueChange = (e) => {
@@ -183,16 +186,15 @@ function EvaluationForm() {
       missing.push("Target Programs");
     }
 
-    if (!data.test_score.status) {
-      missing.push("Test Score");
-    } else if (data.test_score.type === "GRE" || data.test_score.type === "GMAT") {
+    if (data.test_score.taken === true) {
       const scoreNum = Number(data.test_score.score);
-      if (
+      const missingType = !data.test_score.type;
+      const missingScore =
         data.test_score.score === null ||
         data.test_score.score === undefined ||
         data.test_score.score === "" ||
-        Number.isNaN(scoreNum)
-      ) {
+        Number.isNaN(scoreNum);
+      if (missingType || missingScore) {
         missing.push("Test Score");
       }
     }
@@ -250,9 +252,6 @@ function EvaluationForm() {
     submitEvaluation(formData);
   };
 
-  const showTestScoreInput =
-    formData.test_score.type === "GRE" || formData.test_score.type === "GMAT";
-
   return (
     <div className="relative min-h-screen bg-[#FCFCFF] font-['Inter'] overflow-hidden">
       {!bgFailed && (
@@ -292,9 +291,9 @@ function EvaluationForm() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Card 1: Education Details */}
-              <div className="rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F2F0FE] to-white">
+              <div className="flex flex-col h-full rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F2F0FE] to-white">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-full bg-[#C8BFF9] flex items-center justify-center flex-shrink-0">
                     <GraduationCap className="w-5 h-5 text-[#7B5CF0]" />
@@ -307,7 +306,7 @@ function EvaluationForm() {
                   Tell us about your current or more recent education
                 </p>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex-1 flex flex-col gap-5">
                   <div>
                     <label htmlFor="degree" className={labelBase}>
                       Education Degree
@@ -319,7 +318,7 @@ function EvaluationForm() {
                           id="degree"
                           value={formData.degree}
                           onChange={(e) => setFormField("degree", e.target.value)}
-                          className={inputBase}
+                          className={`w-full ${inputBase} pl-10`}
                         >
                           <option value="">Select degree</option>
                           {DEGREE_OPTIONS.map((option) => (
@@ -332,29 +331,54 @@ function EvaluationForm() {
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="cgpa" className={labelBase}>
-                      CGPA
-                      <RequiredAsterisk />
-                    </label>
-                    <div className="mt-1">
-                      <IconField icon={Star} iconColorClass="text-[#7B5CF0]">
-                        <input
-                          id="cgpa"
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="10"
-                          placeholder="e.g 8.5"
-                          value={formData.cgpa}
-                          onChange={(e) => setFormField("cgpa", e.target.value)}
-                          className={inputBase}
-                        />
-                      </IconField>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="cgpa" className={labelBase}>
+                        CGPA
+                        <RequiredAsterisk />
+                      </label>
+                      <div className="mt-1">
+                        <IconField icon={Star} iconColorClass="text-[#7B5CF0]">
+                          <input
+                            id="cgpa"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            placeholder="e.g 8.5"
+                            value={formData.cgpa}
+                            onChange={(e) => setFormField("cgpa", e.target.value)}
+                            className={`w-full ${inputBase} pl-10`}
+                          />
+                        </IconField>
+                      </div>
+                      <p className="text-xs text-[#636363] mt-1">
+                        Enter your CGPA on a 10-point scale.
+                      </p>
                     </div>
-                    <p className="text-xs text-[#636363] mt-1">
-                      Enter your CGPA on a 10-point scale.
-                    </p>
+
+                    <div>
+                      <label htmlFor="year_of_graduation" className={labelBase}>
+                        Year of Graduation
+                      </label>
+                      <div className="mt-1">
+                        <IconField icon={Calendar} iconColorClass="text-[#7B5CF0]">
+                          <select
+                            id="year_of_graduation"
+                            value={formData.year_of_graduation}
+                            onChange={(e) => setFormField("year_of_graduation", e.target.value)}
+                            className={`w-full ${inputBase} pl-10`}
+                          >
+                            <option value="">Select year</option>
+                            {GRAD_YEAR_OPTIONS.map((year) => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            ))}
+                          </select>
+                        </IconField>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -369,7 +393,7 @@ function EvaluationForm() {
                           type="text"
                           value={formData.institution}
                           onChange={(e) => setFormField("institution", e.target.value)}
-                          className={inputBase}
+                          className={`w-full ${inputBase} pl-10`}
                         />
                       </IconField>
                     </div>
@@ -403,7 +427,7 @@ function EvaluationForm() {
                           id="major"
                           value={isMajorOther ? "Other" : formData.major}
                           onChange={handleMajorSelectChange}
-                          className={inputBase}
+                          className={`w-full ${inputBase} pl-10`}
                         >
                           <option value="">Select major</option>
                           {MAJOR_OPTIONS.map((option) => (
@@ -420,7 +444,7 @@ function EvaluationForm() {
                         placeholder="Enter your major"
                         value={formData.major}
                         onChange={(e) => setFormField("major", e.target.value)}
-                        className={`${inputBase} pl-3 mt-2`}
+                        className={`w-full ${inputBase} pl-3 mt-2`}
                       />
                     )}
                   </div>
@@ -436,7 +460,7 @@ function EvaluationForm() {
                           id="destination"
                           value={formData.destination}
                           onChange={(e) => setFormField("destination", e.target.value)}
-                          className={inputBase}
+                          className={`w-full ${inputBase} pl-10`}
                         >
                           <option value="">Select destination</option>
                           {DESTINATION_OPTIONS.map((option) => (
@@ -454,7 +478,7 @@ function EvaluationForm() {
                       Targeted Programs (choose 1-3)
                       <RequiredAsterisk />
                     </legend>
-                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {PROGRAM_OPTIONS.map((option) => {
                         const isChecked =
                           option === "Other"
@@ -464,30 +488,31 @@ function EvaluationForm() {
                           !isChecked && formData.target_programs.length >= MAX_PROGRAMS;
 
                         return (
-                          <div key={option}>
-                            <label className="flex items-center gap-2 text-sm text-[#272728]">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                disabled={disableUnchecked}
-                                onChange={handleProgramCheckboxChange(option)}
-                                className="accent-[#7B5CF0] w-4 h-4"
-                              />
-                              {option}
-                            </label>
-                            {option === "Other" && isOtherProgramChecked && (
-                              <input
-                                type="text"
-                                placeholder="Enter your target program"
-                                value={otherProgramText}
-                                onChange={handleOtherProgramTextChange}
-                                className={`${inputBase} pl-3 mt-2`}
-                              />
-                            )}
-                          </div>
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={handleProgramChipToggle(option)}
+                            disabled={disableUnchecked}
+                            className={`rounded-full font-['Inter'] text-sm px-3.5 py-1.5 border transition-colors ${
+                              isChecked
+                                ? "bg-[#7B5CF0] text-white border-transparent"
+                                : "bg-transparent text-[#494949] border-[#C5C5C5]"
+                            } ${disableUnchecked ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {option}
+                          </button>
                         );
                       })}
                     </div>
+                    {isOtherProgramChecked && (
+                      <input
+                        type="text"
+                        placeholder="Enter your target program"
+                        value={otherProgramText}
+                        onChange={handleOtherProgramTextChange}
+                        className={`w-full ${inputBase} pl-3 mt-2`}
+                      />
+                    )}
                   </fieldset>
 
                   <div>
@@ -501,7 +526,7 @@ function EvaluationForm() {
                           id="target_intake"
                           value={formData.target_intake}
                           onChange={(e) => setFormField("target_intake", e.target.value)}
-                          className={inputBase}
+                          className={`w-full ${inputBase} pl-10`}
                         >
                           <option value="">Select intake</option>
                           {INTAKE_OPTIONS.map((option) => (
@@ -524,34 +549,53 @@ function EvaluationForm() {
                   <legend className="flex items-center gap-2 font-['Inter'] font-semibold text-lg text-[#272728]">
                     <FileCheck className="w-5 h-5 text-[#7B5CF0]" />
                     Test Scores
+                    <span className="font-['Inter'] font-medium text-xs text-[#7B5CF0] bg-[#F2F0FE] rounded-full px-2.5 py-0.5">
+                      Optional
+                    </span>
                   </legend>
                   <div className="flex flex-wrap items-center gap-4">
-                    {TEST_SCORE_OPTIONS.map((option) => (
-                      <label
-                        key={option.label}
-                        className="flex items-center gap-2 text-sm text-[#272728]"
-                      >
-                        <input
-                          type="radio"
-                          name="test_score_option"
-                          checked={
-                            formData.test_score.status === option.status &&
-                            formData.test_score.type === option.type
-                          }
-                          onChange={handleTestScoreOptionChange(option)}
-                          className="accent-[#7B5CF0] w-4 h-4"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                    {showTestScoreInput && (
+                    <label className="flex items-center gap-2 text-sm text-[#272728]">
                       <input
-                        type="number"
-                        placeholder="e.g 330"
-                        value={formData.test_score.score ?? ""}
-                        onChange={handleTestScoreValueChange}
-                        className="w-28 rounded-lg border-[0.5px] border-[#636363] px-3 py-2 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:ring-1 focus:ring-[#7B5CF0]"
+                        type="radio"
+                        name="test_score_taken"
+                        checked={formData.test_score.taken === true}
+                        onChange={handleTestTakenChange(true)}
+                        className="accent-[#7B5CF0] w-4 h-4"
                       />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-[#272728]">
+                      <input
+                        type="radio"
+                        name="test_score_taken"
+                        checked={formData.test_score.taken === false}
+                        onChange={handleTestTakenChange(false)}
+                        className="accent-[#7B5CF0] w-4 h-4"
+                      />
+                      No
+                    </label>
+                    {formData.test_score.taken === true && (
+                      <>
+                        <select
+                          value={formData.test_score.type}
+                          onChange={handleTestTypeChange}
+                          className={`w-36 ${inputBase} pl-3`}
+                        >
+                          <option value="">Select test</option>
+                          {TEST_TYPE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          placeholder="e.g 330 or 7.5"
+                          value={formData.test_score.score ?? ""}
+                          onChange={handleTestScoreValueChange}
+                          className={`w-32 ${inputBase} pl-3`}
+                        />
+                      </>
                     )}
                   </div>
                 </div>

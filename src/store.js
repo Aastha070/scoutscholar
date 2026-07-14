@@ -5,10 +5,11 @@ const initialFormData = {
   institution: "",
   major: "",
   cgpa: "",
+  year_of_graduation: "",
   destination: "",
   target_programs: [],
   target_intake: "",
-  test_score: { type: "", score: null, status: "" },
+  test_score: { taken: null, type: "", score: null },
 };
 
 export const useStore = create((set) => ({

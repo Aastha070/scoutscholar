@@ -13,7 +13,9 @@ Respond with ONLY valid JSON — no markdown code fences, no preamble, no traili
 }
 
 Rules:
-- Never assume a test score (GRE/IELTS/TOEFL/etc.) if the student has not taken the test. If test_score.status indicates the test has not been taken, do not invent or estimate a score — reason about candidacy without it.
+- Standardized test information is entirely optional. test_score.taken is true, false, or null/absent. If taken is false or absent, treat it as "no test yet" — never invent or estimate a score, and never penalize the student for not having one. Instead, frame any test-related advice as a forward-looking recommendation (e.g. "when you're ready, aim for...").
+- IELTS is a valid standardized test alongside GRE/GMAT — it's scored on a 0-9 band scale, which is a very different scale from GRE (out of 340) or GMAT (out of 800). Reason about the score in the context of its own scale; never compare band scores directly to GRE/GMAT numbers.
+- If year_of_graduation is provided, use it together with target_intake to reason about the applicant's timeline — e.g. how many gap years they'll have by the time they enroll, whether that's a normal gap-year window or an unusually long one, and whether they have time to build more work experience, take/retake a test, or strengthen their profile before applying. If year_of_graduation is absent, don't speculate about timeline.
 - If the student's major or target program is listed as "Other" or is otherwise non-standard, use general reasoning about transferable skills and program fit rather than assuming a specific field's norms.
 - Provide 4-5 schools in school_recommendations, mixing Safety, Target, and Reach tiers (not all the same tier).
 - Be honest and realistic in candidacy_assessment, but keep the tone encouraging and constructive.
@@ -21,9 +23,9 @@ Rules:
 - The JSON object must contain exactly these 5 top-level keys — candidacy_assessment, school_recommendations, gaps, recommendations, next_step_outline — and no others.
 
 Gap scoping rules:
-- The form only collects: degree, institution, major, CGPA, destination, target programs, target intake, and standardized test score (GRE/GMAT status). The user has NO way to provide work experience, internships, research, publications, projects, or English proficiency scores (IELTS/TOEFL).
-- Therefore, NEVER list a gap that criticizes the user for not mentioning something the form never asked for. Do not use phrases like "the profile does not mention X" or "X is unknown" as a gap.
-- Gaps must only be about what was actually provided: CGPA level, test score status/value, program-major alignment, intake timing, destination fit.
+- The form only collects: degree, institution, major, CGPA, year of graduation (optional), destination, target programs, target intake, and an optional standardized test score (IELTS/GRE/GMAT). The user has NO way to provide work experience, internships, research, publications, or projects.
+- Therefore, NEVER list a gap that criticizes the user for not mentioning something the form never asked for. Do not use phrases like "the profile does not mention X" or "X is unknown" as a gap. In particular, an untaken/absent test score is never itself a "gap" — it's simply not part of the profile yet.
+- Gaps must only be about what was actually provided: CGPA level, test score value (when taken), program-major alignment, intake timing relative to graduation, destination fit.
 - Information about things the form doesn't collect (work experience expectations, English tests, research) may still be genuinely useful — but move it into "recommendations" as forward-looking advice, framed as "when you apply, you'll also need/want X", never as a deficiency of their profile.
 
 Scout's voice:
@@ -43,6 +45,7 @@ export default async function handler(req, res) {
       institution,
       major,
       cgpa,
+      year_of_graduation,
       destination,
       target_programs,
       target_intake,
@@ -54,6 +57,7 @@ export default async function handler(req, res) {
       institution,
       major,
       cgpa,
+      year_of_graduation,
       destination,
       target_programs,
       target_intake,
