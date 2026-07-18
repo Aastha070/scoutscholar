@@ -8,9 +8,11 @@ import {
   Calendar,
   FileCheck,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { useStore } from "./store";
 import ResultCards from "./ResultCards";
+import AnticipationScreen from "./AnticipationScreen";
 import landingBg from "./assets/landing-bg.png";
 import scoutGreeting from "./assets/scout-greeting.png";
 
@@ -53,8 +55,13 @@ const TEST_TYPE_OPTIONS = ["IELTS", "GRE", "GMAT"];
 
 const GRAD_YEAR_OPTIONS = Array.from({ length: 2030 - 2018 + 1 }, (_, i) => 2018 + i);
 
-const inputBase =
-  "rounded-lg border border-[#D9D6E8] pr-3 py-2.5 text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:border-[#7B5CF0]";
+const controlBase =
+  "h-11 rounded-lg border border-[#D9D6E8] text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:border-[#7B5CF0]";
+
+const inputBase = `${controlBase} px-3`;
+const inputWithIconBase = `${controlBase} pl-10 pr-3`;
+const selectBase = `${controlBase} appearance-none px-3 pr-10`;
+const selectWithIconBase = `${controlBase} appearance-none pl-10 pr-10`;
 
 const labelBase = "flex items-center gap-1 font-['Inter'] font-medium text-sm text-[#272728]";
 
@@ -67,6 +74,20 @@ function IconField({ icon: Icon, iconColorClass, children }) {
     <div className="relative">
       <Icon className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${iconColorClass}`} />
       {children}
+    </div>
+  );
+}
+
+function SelectField({ icon: Icon, iconColorClass, className = "", children }) {
+  return (
+    <div className={`relative ${className}`}>
+      {Icon && (
+        <Icon
+          className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${iconColorClass} pointer-events-none`}
+        />
+      )}
+      {children}
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#636363] pointer-events-none" />
     </div>
   );
 }
@@ -271,6 +292,9 @@ function EvaluationForm() {
           </span>
         </div>
 
+        {status === "loading" ? (
+          <AnticipationScreen />
+        ) : (
         <div className="max-w-[1100px] mx-auto rounded-xl shadow-[0_8px_24px_rgba(26,22,37,0.1)] bg-gradient-to-br from-[rgba(244,244,244,0.38)] to-[rgba(248,247,255,0.38)] p-8">
           <div className="flex items-center gap-4 mb-8">
             {!greetingFailed ? (
@@ -302,23 +326,23 @@ function EvaluationForm() {
                     1. Education Details
                   </h3>
                 </div>
-                <p className="text-sm text-[#636363] mb-4">
+                <p className="text-sm text-[#636363] mb-3">
                   Tell us about your current or more recent education
                 </p>
 
-                <div className="flex-1 flex flex-col gap-5">
+                <div className="flex-1 flex flex-col justify-center gap-3">
                   <div>
                     <label htmlFor="degree" className={labelBase}>
                       Education Degree
                       <RequiredAsterisk />
                     </label>
-                    <div className="mt-1">
-                      <IconField icon={GraduationCap} iconColorClass="text-[#7B5CF0]">
+                    <div className="mt-2">
+                      <SelectField icon={GraduationCap} iconColorClass="text-[#7B5CF0]">
                         <select
                           id="degree"
                           value={formData.degree}
                           onChange={(e) => setFormField("degree", e.target.value)}
-                          className={`w-full ${inputBase} pl-10`}
+                          className={`w-full ${selectWithIconBase}`}
                         >
                           <option value="">Select degree</option>
                           {DEGREE_OPTIONS.map((option) => (
@@ -327,8 +351,41 @@ function EvaluationForm() {
                             </option>
                           ))}
                         </select>
-                      </IconField>
+                      </SelectField>
                     </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="major" className={labelBase}>
+                      Major/Field of Study
+                      <RequiredAsterisk />
+                    </label>
+                    <div className="mt-2">
+                      <SelectField icon={BookOpen} iconColorClass="text-[#7B5CF0]">
+                        <select
+                          id="major"
+                          value={isMajorOther ? "Other" : formData.major}
+                          onChange={handleMajorSelectChange}
+                          className={`w-full ${selectWithIconBase}`}
+                        >
+                          <option value="">Select major</option>
+                          {MAJOR_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </SelectField>
+                    </div>
+                    {isMajorOther && (
+                      <input
+                        type="text"
+                        placeholder="Enter your major"
+                        value={formData.major}
+                        onChange={(e) => setFormField("major", e.target.value)}
+                        className={`w-full ${inputBase} mt-2`}
+                      />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -337,7 +394,7 @@ function EvaluationForm() {
                         CGPA
                         <RequiredAsterisk />
                       </label>
-                      <div className="mt-1">
+                      <div className="mt-2">
                         <IconField icon={Star} iconColorClass="text-[#7B5CF0]">
                           <input
                             id="cgpa"
@@ -348,7 +405,7 @@ function EvaluationForm() {
                             placeholder="e.g 8.5"
                             value={formData.cgpa}
                             onChange={(e) => setFormField("cgpa", e.target.value)}
-                            className={`w-full ${inputBase} pl-10`}
+                            className={`w-full ${inputWithIconBase}`}
                           />
                         </IconField>
                       </div>
@@ -361,13 +418,13 @@ function EvaluationForm() {
                       <label htmlFor="year_of_graduation" className={labelBase}>
                         Year of Graduation
                       </label>
-                      <div className="mt-1">
-                        <IconField icon={Calendar} iconColorClass="text-[#7B5CF0]">
+                      <div className="mt-2">
+                        <SelectField icon={Calendar} iconColorClass="text-[#7B5CF0]">
                           <select
                             id="year_of_graduation"
                             value={formData.year_of_graduation}
                             onChange={(e) => setFormField("year_of_graduation", e.target.value)}
-                            className={`w-full ${inputBase} pl-10`}
+                            className={`w-full ${selectWithIconBase}`}
                           >
                             <option value="">Select year</option>
                             {GRAD_YEAR_OPTIONS.map((year) => (
@@ -376,7 +433,7 @@ function EvaluationForm() {
                               </option>
                             ))}
                           </select>
-                        </IconField>
+                        </SelectField>
                       </div>
                     </div>
                   </div>
@@ -386,14 +443,14 @@ function EvaluationForm() {
                       Institution Name
                       <RequiredAsterisk />
                     </label>
-                    <div className="mt-1">
+                    <div className="mt-2">
                       <IconField icon={Landmark} iconColorClass="text-[#7B5CF0]">
                         <input
                           id="institution"
                           type="text"
                           value={formData.institution}
                           onChange={(e) => setFormField("institution", e.target.value)}
-                          className={`w-full ${inputBase} pl-10`}
+                          className={`w-full ${inputWithIconBase}`}
                         />
                       </IconField>
                     </div>
@@ -402,7 +459,7 @@ function EvaluationForm() {
               </div>
 
               {/* Card 2: Study Abroad Goals */}
-              <div className="rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F8F0E0] to-white">
+              <div className="flex flex-col h-full rounded-2xl p-4 shadow-sm bg-gradient-to-b from-[#F8F0E0] to-white">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-full bg-[#F5D38F] flex items-center justify-center flex-shrink-0">
                     <Globe className="w-5 h-5 text-amber-600" />
@@ -411,56 +468,23 @@ function EvaluationForm() {
                     2. Study Abroad Goals
                   </h3>
                 </div>
-                <p className="text-sm text-[#636363] mb-4">
+                <p className="text-sm text-[#636363] mb-3">
                   Share the details regarding your study abroad goal.
                 </p>
 
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label htmlFor="major" className={labelBase}>
-                      Major/Field of Study
-                      <RequiredAsterisk />
-                    </label>
-                    <div className="mt-1">
-                      <IconField icon={BookOpen} iconColorClass="text-amber-600">
-                        <select
-                          id="major"
-                          value={isMajorOther ? "Other" : formData.major}
-                          onChange={handleMajorSelectChange}
-                          className={`w-full ${inputBase} pl-10`}
-                        >
-                          <option value="">Select major</option>
-                          {MAJOR_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      </IconField>
-                    </div>
-                    {isMajorOther && (
-                      <input
-                        type="text"
-                        placeholder="Enter your major"
-                        value={formData.major}
-                        onChange={(e) => setFormField("major", e.target.value)}
-                        className={`w-full ${inputBase} pl-3 mt-2`}
-                      />
-                    )}
-                  </div>
-
+                <div className="flex-1 flex flex-col justify-center gap-3">
                   <div>
                     <label htmlFor="destination" className={labelBase}>
                       Preferred Destination
                       <RequiredAsterisk />
                     </label>
-                    <div className="mt-1">
-                      <IconField icon={Globe} iconColorClass="text-amber-600">
+                    <div className="mt-2">
+                      <SelectField icon={Globe} iconColorClass="text-amber-600">
                         <select
                           id="destination"
                           value={formData.destination}
                           onChange={(e) => setFormField("destination", e.target.value)}
-                          className={`w-full ${inputBase} pl-10`}
+                          className={`w-full ${selectWithIconBase}`}
                         >
                           <option value="">Select destination</option>
                           {DESTINATION_OPTIONS.map((option) => (
@@ -469,7 +493,7 @@ function EvaluationForm() {
                             </option>
                           ))}
                         </select>
-                      </IconField>
+                      </SelectField>
                     </div>
                   </div>
 
@@ -495,8 +519,8 @@ function EvaluationForm() {
                             disabled={disableUnchecked}
                             className={`rounded-full font-['Inter'] text-sm px-3.5 py-1.5 border transition-colors ${
                               isChecked
-                                ? "bg-[#7B5CF0] text-white border-transparent"
-                                : "bg-transparent text-[#494949] border-[#C5C5C5]"
+                                ? "bg-[#F48D01] text-white border-transparent"
+                                : "bg-transparent text-[#494949] border-[#C5C5C5] hover:bg-[#F48D01]/10"
                             } ${disableUnchecked ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             {option}
@@ -510,7 +534,7 @@ function EvaluationForm() {
                         placeholder="Enter your target program"
                         value={otherProgramText}
                         onChange={handleOtherProgramTextChange}
-                        className={`w-full ${inputBase} pl-3 mt-2`}
+                        className={`w-full ${inputBase} mt-2`}
                       />
                     )}
                   </fieldset>
@@ -520,13 +544,13 @@ function EvaluationForm() {
                       Target Intake
                       <RequiredAsterisk />
                     </label>
-                    <div className="mt-1">
-                      <IconField icon={Calendar} iconColorClass="text-amber-600">
+                    <div className="mt-2">
+                      <SelectField icon={Calendar} iconColorClass="text-amber-600">
                         <select
                           id="target_intake"
                           value={formData.target_intake}
                           onChange={(e) => setFormField("target_intake", e.target.value)}
-                          className={`w-full ${inputBase} pl-10`}
+                          className={`w-full ${selectWithIconBase}`}
                         >
                           <option value="">Select intake</option>
                           {INTAKE_OPTIONS.map((option) => (
@@ -535,7 +559,7 @@ function EvaluationForm() {
                             </option>
                           ))}
                         </select>
-                      </IconField>
+                      </SelectField>
                     </div>
                   </div>
                 </div>
@@ -576,24 +600,26 @@ function EvaluationForm() {
                     </label>
                     {formData.test_score.taken === true && (
                       <>
-                        <select
-                          value={formData.test_score.type}
-                          onChange={handleTestTypeChange}
-                          className={`w-36 ${inputBase} pl-3`}
-                        >
-                          <option value="">Select test</option>
-                          {TEST_TYPE_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
+                        <SelectField className="w-36">
+                          <select
+                            value={formData.test_score.type}
+                            onChange={handleTestTypeChange}
+                            className={`w-full ${selectBase}`}
+                          >
+                            <option value="">Select test</option>
+                            {TEST_TYPE_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </SelectField>
                         <input
                           type="number"
                           placeholder="e.g 330 or 7.5"
                           value={formData.test_score.score ?? ""}
                           onChange={handleTestScoreValueChange}
-                          className={`w-32 ${inputBase} pl-3`}
+                          className={`w-32 ${inputBase}`}
                         />
                       </>
                     )}
@@ -603,9 +629,9 @@ function EvaluationForm() {
 
               <button
                 type="submit"
-                className="bg-[#7B5CF0] text-white font-['Inter'] font-semibold text-xl rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer border-none whitespace-nowrap"
+                className="bg-[#7B5CF0] hover:bg-[#6545E0] text-white font-['Inter'] font-semibold text-2xl rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer border-none whitespace-nowrap shadow-[0_2px_4px_rgba(26,22,37,0.08)] transition-colors"
               >
-                Get Evaluation <ArrowRight className="w-5 h-5" />
+                Get Evaluation <ArrowRight className="w-7 h-7" />
               </button>
             </div>
 
@@ -619,13 +645,9 @@ function EvaluationForm() {
             )}
           </form>
         </div>
+        )}
 
         <div className="max-w-[1100px] mx-auto">
-          {status === "loading" && (
-            <p className="mt-6 text-center text-[#7B5CF0] font-medium">
-              Evaluating your profile — this takes about 20–30 seconds…
-            </p>
-          )}
           {status === "error" && (
             <div
               role="alert"
