@@ -280,7 +280,7 @@ function ConversationScreen({ status, results, onEdit }) {
       ) : (
         results && (
           <div className="mt-8">
-            <ResultCards results={results} />
+            <ResultCards results={results} onEdit={onEdit} />
           </div>
         )
       )}

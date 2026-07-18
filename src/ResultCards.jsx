@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle, OctagonAlert } from "lucide-react";
 import scoutThankful from "./assets/scout-thankfull.png";
 import scoutGreeting from "./assets/scout-greeting.png";
 import iconProfile from "./assets/icon-profile.png";
@@ -84,16 +85,51 @@ function BulletRow({ markerClassName, children }) {
   );
 }
 
-function ResultCards({ results }) {
-  const { candidacy_assessment, school_recommendations, gaps, recommendations, next_step_outline } =
-    results;
+function ResultCards({ results, onEdit }) {
+  const {
+    input_review,
+    candidacy_assessment,
+    school_recommendations,
+    gaps,
+    recommendations,
+    next_step_outline,
+  } = results;
   const hasGaps = Array.isArray(gaps) && gaps.length > 0;
+  const reviewStatus = input_review?.status ?? "ok";
 
   const levelBadgeClasses =
     LEVEL_BADGE_CLASSES[candidacy_assessment.level] || "bg-gray-100 text-gray-800";
 
+  if (reviewStatus === "rejected") {
+    return (
+      <div className="rounded-xl bg-red-50 border border-red-200 p-6 flex flex-col items-center gap-4 text-center">
+        <OctagonAlert className="w-8 h-8 text-red-600 flex-shrink-0" />
+        <p className="font-['Inter'] text-base text-red-700">
+          {input_review.message ||
+            "ScoutScholar can only evaluate genuine student profiles."}
+        </p>
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="bg-red-600 hover:bg-red-700 text-white font-['Inter'] font-semibold rounded-xl px-6 py-3 cursor-pointer border-none transition-colors"
+          >
+            Edit Your Profile
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
+      {reviewStatus === "warning" && (
+        <div className="mb-6 rounded-xl bg-[#FEF3C7] border border-amber-300 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+          <p className="font-['Inter'] text-sm text-amber-800">{input_review.message}</p>
+        </div>
+      )}
+
       {/* Scout intro bubble */}
       <div className="flex items-center gap-4 mb-6">
         <AvatarImage src={scoutThankful} alt="Scout" />

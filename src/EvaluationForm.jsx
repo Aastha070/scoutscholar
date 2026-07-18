@@ -9,6 +9,7 @@ import {
   FileCheck,
   ArrowRight,
   ChevronDown,
+  TriangleAlert,
 } from "lucide-react";
 import { useStore } from "./store";
 import ConversationScreen from "./ConversationScreen";
@@ -58,7 +59,37 @@ const INTAKE_OPTIONS = ["Fall 2026", "Spring 2027", "Fall 2027"];
 
 const TEST_TYPE_OPTIONS = ["IELTS", "GRE", "GMAT"];
 
+const TEST_SCORE_RANGES = {
+  IELTS: { min: 0, max: 9 },
+  GRE: { min: 260, max: 340 },
+  GMAT: { min: 200, max: 800 },
+};
+
+function getTestScoreRangeError(data) {
+  if (data.test_score.taken !== true) return null;
+  const range = TEST_SCORE_RANGES[data.test_score.type];
+  if (!range) return null;
+  const score = Number(data.test_score.score);
+  if (Number.isNaN(score)) return null;
+  if (score < range.min || score > range.max) {
+    return `${data.test_score.type} scores range from ${range.min} to ${range.max}.`;
+  }
+  return null;
+}
+
+const INDIA_DESTINATION_NAMES = new Set(["india", "bharat"]);
+
+function isIndiaDestination(destination) {
+  if (!destination) return false;
+  return INDIA_DESTINATION_NAMES.has(destination.trim().toLowerCase());
+}
+
 const GRAD_YEAR_OPTIONS = Array.from({ length: 2030 - 2018 + 1 }, (_, i) => 2018 + i);
+
+function getIntakeYear(intake) {
+  const match = intake && intake.match(/\d{4}/);
+  return match ? Number(match[0]) : null;
+}
 
 const controlBase =
   "h-11 rounded-lg border border-[#D9D6E8] text-sm text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:border-[#7B5CF0]";
@@ -110,6 +141,7 @@ function EvaluationForm() {
   const results = useStore((state) => state.results);
 
   const [isMajorOther, setIsMajorOther] = useState(false);
+  const [isDestinationOther, setIsDestinationOther] = useState(false);
   const [selectedPrograms, setSelectedPrograms] = useState([]);
   const [isOtherProgramChecked, setIsOtherProgramChecked] = useState(false);
   const [otherProgramText, setOtherProgramText] = useState("");
@@ -128,6 +160,17 @@ function EvaluationForm() {
     } else {
       setIsMajorOther(false);
       setFormField("major", value);
+    }
+  };
+
+  const handleDestinationSelectChange = (e) => {
+    const value = e.target.value;
+    if (value === "Other") {
+      setIsDestinationOther(true);
+      setFormField("destination", "");
+    } else {
+      setIsDestinationOther(false);
+      setFormField("destination", value);
     }
   };
 
@@ -281,6 +324,20 @@ function EvaluationForm() {
       setValidationError(`Please fill in: ${missingFields.join(", ")}.`);
       return;
     }
+
+    if (isIndiaDestination(formData.destination)) {
+      setValidationError(
+        "ScoutScholar helps you plan studying abroad — please choose an international destination."
+      );
+      return;
+    }
+
+    const rangeError = getTestScoreRangeError(formData);
+    if (rangeError) {
+      setValidationError(rangeError);
+      return;
+    }
+
     setValidationError(null);
 
     await submitEvaluation(formData);
@@ -289,6 +346,11 @@ function EvaluationForm() {
   const handleTryAgain = () => {
     submitEvaluation(formData);
   };
+
+  const intakeYear = getIntakeYear(formData.target_intake);
+  const gradYear = formData.year_of_graduation ? Number(formData.year_of_graduation) : null;
+  const showTimelineWarning =
+    gradYear !== null && intakeYear !== null && gradYear - intakeYear >= 2;
 
   return (
     <div className="relative min-h-screen bg-[#FCFCFF] font-['Inter'] overflow-hidden">
@@ -499,8 +561,8 @@ function EvaluationForm() {
                       <SelectField icon={Globe} iconColorClass="text-amber-600">
                         <select
                           id="destination"
-                          value={formData.destination}
-                          onChange={(e) => setFormField("destination", e.target.value)}
+                          value={isDestinationOther ? "Other" : formData.destination}
+                          onChange={handleDestinationSelectChange}
                           className={`w-full ${selectWithIconBase}`}
                         >
                           <option value="">Select destination</option>
@@ -512,6 +574,15 @@ function EvaluationForm() {
                         </select>
                       </SelectField>
                     </div>
+                    {isDestinationOther && (
+                      <input
+                        type="text"
+                        placeholder="Enter your destination"
+                        value={formData.destination}
+                        onChange={(e) => setFormField("destination", e.target.value)}
+                        className={`w-full ${inputBase} mt-2`}
+                      />
+                    )}
                   </div>
 
                   <fieldset>
@@ -579,6 +650,13 @@ function EvaluationForm() {
                         </select>
                       </SelectField>
                     </div>
+                    {showTimelineWarning && (
+                      <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs text-amber-800">
+                        <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        Heads up — you'd still be mid-degree at this intake. Double-check your
+                        graduation year and intake.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -634,6 +712,9 @@ function EvaluationForm() {
                         </SelectField>
                         <input
                           type="number"
+                          step="0.1"
+                          min={TEST_SCORE_RANGES[formData.test_score.type]?.min}
+                          max={TEST_SCORE_RANGES[formData.test_score.type]?.max}
                           placeholder="e.g 330 or 7.5"
                           value={formData.test_score.score ?? ""}
                           onChange={handleTestScoreValueChange}
