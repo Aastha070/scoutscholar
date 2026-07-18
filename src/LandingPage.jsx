@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import landingBg from "./assets/landing-bg.png";
 import scoutMascot from "./assets/scout-agent.png";
+import scoutLottie from "./assets/scout.lottie";
 import badge1 from "./assets/badge01.png";
 import badge2 from "./assets/badge02.png";
 import badge3 from "./assets/badge03.png";
@@ -29,8 +31,17 @@ function BadgeIcon({ icon, emoji, label }) {
 
 function LandingPage() {
   const navigate = useNavigate();
+  const [dotLottie, setDotLottie] = useState(null);
+  const [lottieFailed, setLottieFailed] = useState(false);
   const [mascotFailed, setMascotFailed] = useState(false);
   const [bgFailed, setBgFailed] = useState(false);
+
+  useEffect(() => {
+    if (!dotLottie) return;
+    const handleLoadError = () => setLottieFailed(true);
+    dotLottie.addEventListener("loadError", handleLoadError);
+    return () => dotLottie.removeEventListener("loadError", handleLoadError);
+  }, [dotLottie]);
 
   return (
     <div className="relative min-h-screen bg-[#F8F7FF] overflow-hidden">
@@ -45,43 +56,63 @@ function LandingPage() {
       )}
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <nav className="pt-8 px-6">
-          <span className="font-['Inter'] text-[32px] text-[#7B5CF0] tracking-[-1.5px]">
+        <nav className="pt-5 px-6">
+          <span className="font-['Inter'] text-[24px] text-[#7B5CF0] tracking-[-1px]">
             ScoutScholar
           </span>
         </nav>
 
-        <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <div className="flex flex-col items-center gap-5">
-            <h1 className="font-['Playfair_Display'] font-bold text-[40px] leading-[48px] sm:text-[64px] sm:leading-[72px] tracking-[-1px] text-[#7B5CF0] max-w-4xl">
+        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-6 pb-4 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="font-['Playfair_Display'] font-bold text-[36px] leading-[44px] md:text-[44px] md:leading-[52px] tracking-[-1px] text-[#7B5CF0] max-w-4xl">
               Dreaming about Studying Abroad?
             </h1>
 
-            <p className="font-['Inter'] font-semibold text-[32px] text-[#7B5CF0]">
+            <p className="font-['Inter'] font-semibold text-[20px] text-[#7B5CF0]">
               Get Your Profile Evaluation with Scout!
             </p>
           </div>
 
-          {!mascotFailed ? (
+          {!lottieFailed ? (
+            <DotLottieReact
+              src={scoutLottie}
+              loop
+              autoplay
+              dotLottieRefCallback={setDotLottie}
+              className="w-[180px] h-[180px]"
+            />
+          ) : !mascotFailed ? (
             <img
               src={scoutMascot}
               alt="Scout mascot"
-              className="w-[180px] object-contain mt-10"
+              className="w-[180px] object-contain"
               onError={() => setMascotFailed(true)}
             />
           ) : (
-            <div className="w-[180px] h-[180px] rounded-full bg-[#E4DCFC] mt-10" />
+            <div className="w-[180px] h-[180px] rounded-full bg-[#E4DCFC]" />
           )}
 
           <button
             type="button"
             onClick={() => navigate("/evaluation")}
-            className="mt-10 w-[220px] p-4 rounded-[12px] flex items-center justify-center gap-2 font-['Inter'] font-semibold text-2xl text-[#F8F7FF] backdrop-blur-sm cursor-pointer border-none transition-[background] duration-300 bg-[linear-gradient(172deg,#7B5CF0_16%,#F8F7FF_192%)] hover:bg-[linear-gradient(172deg,#E4DCFC_16%,#6545E0_192%)]"
+            className="group relative w-[220px] p-4 rounded-xl flex items-center justify-center gap-2 font-['Inter'] font-semibold text-2xl text-[#F8F7FF] backdrop-blur-sm cursor-pointer border-none overflow-hidden shadow-[0_2px_8px_rgba(26,22,37,0.08)]"
           >
-            Let's talk <span aria-hidden="true">&rarr;</span>
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-xl"
+              style={{ background: "linear-gradient(172deg, #7B5CF0 16%, #F8F7FF 192%)" }}
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100"
+              style={{ background: "linear-gradient(172deg, #E4DCFC 0%, #6545E0 100%)" }}
+            />
+            <span className="relative flex items-center gap-2">
+              Let's talk <span aria-hidden="true">&rarr;</span>
+            </span>
           </button>
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             {BADGES.map((badge) => (
               <div
                 key={badge.label}

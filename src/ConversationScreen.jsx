@@ -10,8 +10,10 @@ import {
   FileCheck,
   Brain,
   ChevronRight,
+  Pencil,
 } from "lucide-react";
 import { useStore } from "./store";
+import ResultCards from "./ResultCards";
 import scoutGreeting from "./assets/scout-greeting.png";
 import scoutThankful from "./assets/scout-thankfull.png";
 import scoutThinking from "./assets/scout-thinking.png";
@@ -73,14 +75,16 @@ function buildMessages(formData) {
   ];
 }
 
-function AnticipationScreen() {
+function ConversationScreen({ status, results, onEdit }) {
   const formData = useStore((state) => state.formData);
+  const isLoading = status === "loading";
 
   const messages = useMemo(() => buildMessages(formData), [formData]);
   const [messageIndex, setMessageIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    if (!isLoading) return;
     const interval = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
@@ -89,7 +93,7 @@ function AnticipationScreen() {
       }, FADE_MS);
     }, MESSAGE_CYCLE_MS);
     return () => clearInterval(interval);
-  }, [messages.length]);
+  }, [isLoading, messages.length]);
 
   const hasProgramSelections = formData.target_programs && formData.target_programs.length > 0;
 
@@ -106,6 +110,16 @@ function AnticipationScreen() {
       </div>
 
       {/* Context card */}
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="flex items-center gap-1 rounded-lg border border-[#7B5CF0] bg-transparent px-2.5 py-1 font-['Inter'] text-sm text-[#7B5CF0] hover:bg-[#7B5CF0]/10 transition-colors cursor-pointer"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Edit
+        </button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         <div className="flex flex-col h-full rounded-lg border border-[#6545E0] bg-white/50 backdrop-blur-sm p-4">
           <div className="flex items-center justify-between mb-3">
@@ -174,9 +188,9 @@ function AnticipationScreen() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {hasProgramSelections ? (
-                  formData.target_programs.map((program) => (
+                  formData.target_programs.map((program, index) => (
                     <span
-                      key={program}
+                      key={`${program}-${index}`}
                       className="rounded-full bg-[#F48D01] text-white font-['Inter'] text-sm px-3.5 py-1.5"
                     >
                       {program}
@@ -228,40 +242,50 @@ function AnticipationScreen() {
         </div>
       </div>
 
-      {/* Scout is thinking */}
-      <div className="flex items-center gap-4 mt-8">
-        <AvatarImage src={scoutThinking} alt="Scout" />
-        <div className="bg-white border border-[#7B5CF0] rounded-xl shadow-sm p-4 flex-1">
-          <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4 text-[#7B5CF0] animate-pulse" />
-            <span className="font-['Inter'] font-semibold text-xl text-[#7B5CF0]">
-              Scout is thinking
-            </span>
+      {isLoading ? (
+        <>
+          {/* Scout is thinking */}
+          <div className="flex items-center gap-4 mt-8">
+            <AvatarImage src={scoutThinking} alt="Scout" />
+            <div className="bg-white border border-[#7B5CF0] rounded-xl shadow-sm p-4 flex-1">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-[#7B5CF0] animate-pulse" />
+                <span className="font-['Inter'] font-semibold text-xl text-[#7B5CF0]">
+                  Scout is thinking
+                </span>
+              </div>
+              <div className="flex items-center gap-1 mt-2">
+                <p
+                  className={`font-['Inter'] text-sm text-[#454545] transition-opacity duration-300 ${
+                    visible ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  {messages[messageIndex]}
+                </p>
+                <ChevronRight className="w-4 h-4 text-[#454545] flex-shrink-0" aria-hidden="true" />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1 mt-2">
-            <p
-              className={`font-['Inter'] text-sm text-[#454545] transition-opacity duration-300 ${
-                visible ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              {messages[messageIndex]}
-            </p>
-            <ChevronRight className="w-4 h-4 text-[#454545] flex-shrink-0" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
 
-      {/* Loading indicator */}
-      <div className="flex justify-center mt-8" aria-hidden="true">
-        <div
-          className="w-[71px] h-[71px] rounded-full flex items-center justify-center animate-pulse"
-          style={{ background: "linear-gradient(135deg, #F8F7FF, #A99AF4)" }}
-        >
-          <div className="w-5 h-5 rounded-md bg-[#6545E0]" />
-        </div>
-      </div>
+          {/* Loading indicator */}
+          <div className="flex justify-center mt-8" aria-hidden="true">
+            <div
+              className="w-[71px] h-[71px] rounded-full flex items-center justify-center animate-pulse"
+              style={{ background: "linear-gradient(135deg, #F8F7FF, #A99AF4)" }}
+            >
+              <div className="w-5 h-5 rounded-md bg-[#6545E0]" />
+            </div>
+          </div>
+        </>
+      ) : (
+        results && (
+          <div className="mt-8">
+            <ResultCards results={results} />
+          </div>
+        )
+      )}
     </div>
   );
 }
 
-export default AnticipationScreen;
+export default ConversationScreen;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   GraduationCap,
   Star,
@@ -11,8 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useStore } from "./store";
-import ResultCards from "./ResultCards";
-import AnticipationScreen from "./AnticipationScreen";
+import ConversationScreen from "./ConversationScreen";
 import landingBg from "./assets/landing-bg.png";
 import scoutGreeting from "./assets/scout-greeting.png";
 
@@ -49,6 +48,12 @@ const PROGRAM_OPTIONS = [
 
 const MAX_PROGRAMS = 3;
 
+function buildTargetPrograms(selectedPrograms, otherChecked, otherText) {
+  if (!otherChecked) return selectedPrograms;
+  const trimmed = otherText.trim();
+  return [...selectedPrograms, trimmed || "Other"];
+}
+
 const INTAKE_OPTIONS = ["Fall 2026", "Spring 2027", "Fall 2027"];
 
 const TEST_TYPE_OPTIONS = ["IELTS", "GRE", "GMAT"];
@@ -60,8 +65,12 @@ const controlBase =
 
 const inputBase = `${controlBase} px-3`;
 const inputWithIconBase = `${controlBase} pl-10 pr-3`;
-const selectBase = `${controlBase} appearance-none px-3 pr-10`;
 const selectWithIconBase = `${controlBase} appearance-none pl-10 pr-10`;
+
+const compactControlBase =
+  "rounded-lg border border-[#636363] text-xs text-[#272728] placeholder-[#848383] bg-white/70 focus:outline-none focus:border-[#7B5CF0]";
+const compactSelectBase = `${compactControlBase} appearance-none px-2 py-2 pr-7`;
+const compactInputBase = `${compactControlBase} px-2 py-2`;
 
 const labelBase = "flex items-center gap-1 font-['Inter'] font-medium text-sm text-[#272728]";
 
@@ -101,11 +110,15 @@ function EvaluationForm() {
   const results = useStore((state) => state.results);
 
   const [isMajorOther, setIsMajorOther] = useState(false);
+  const [selectedPrograms, setSelectedPrograms] = useState([]);
   const [isOtherProgramChecked, setIsOtherProgramChecked] = useState(false);
   const [otherProgramText, setOtherProgramText] = useState("");
   const [validationError, setValidationError] = useState(null);
   const [greetingFailed, setGreetingFailed] = useState(false);
   const [bgFailed, setBgFailed] = useState(false);
+
+  const abortControllerRef = useRef(null);
+  const editAbortedRef = useRef(false);
 
   const handleMajorSelectChange = (e) => {
     const value = e.target.value;
@@ -119,45 +132,34 @@ function EvaluationForm() {
   };
 
   const handleProgramChipToggle = (option) => () => {
-    const isCurrentlyChecked =
-      option === "Other" ? isOtherProgramChecked : formData.target_programs.includes(option);
-    const checked = !isCurrentlyChecked;
-    const current = formData.target_programs;
-
     if (option === "Other") {
+      const checked = !isOtherProgramChecked;
       setIsOtherProgramChecked(checked);
-      const otherValue = otherProgramText || "Other";
-      if (checked) {
-        setFormField("target_programs", [...current, otherValue]);
-      } else {
-        setFormField(
-          "target_programs",
-          current.filter((v) => v !== otherValue)
-        );
-        setOtherProgramText("");
-      }
+      if (!checked) setOtherProgramText("");
+      setFormField(
+        "target_programs",
+        buildTargetPrograms(selectedPrograms, checked, checked ? otherProgramText : "")
+      );
       return;
     }
 
-    if (checked) {
-      setFormField("target_programs", [...current, option]);
-    } else {
-      setFormField(
-        "target_programs",
-        current.filter((v) => v !== option)
-      );
-    }
+    const checked = !selectedPrograms.includes(option);
+    const nextSelected = checked
+      ? [...selectedPrograms, option]
+      : selectedPrograms.filter((v) => v !== option);
+    setSelectedPrograms(nextSelected);
+    setFormField(
+      "target_programs",
+      buildTargetPrograms(nextSelected, isOtherProgramChecked, otherProgramText)
+    );
   };
 
   const handleOtherProgramTextChange = (e) => {
     const newText = e.target.value;
-    const previousValue = otherProgramText || "Other";
     setOtherProgramText(newText);
     setFormField(
       "target_programs",
-      formData.target_programs.map((v) =>
-        v === previousValue ? newText || "Other" : v
-      )
+      buildTargetPrograms(selectedPrograms, isOtherProgramChecked, newText)
     );
   };
 
@@ -227,6 +229,7 @@ function EvaluationForm() {
     setStatus("loading");
 
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
@@ -245,15 +248,29 @@ function EvaluationForm() {
       setResults(responseJson);
       setStatus("idle");
     } catch (error) {
+      if (error.name === "AbortError" && editAbortedRef.current) {
+        editAbortedRef.current = false;
+        return;
+      }
       if (error.name === "AbortError") {
-        console.error("Request timed out after 15s", error);
+        console.error("Request timed out after 45s", error);
       } else {
         console.error(error);
       }
       setStatus("error");
     } finally {
       clearTimeout(timeoutId);
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
+  };
+
+  const handleEdit = () => {
+    editAbortedRef.current = true;
+    abortControllerRef.current?.abort();
+    setStatus("idle");
+    setResults(null);
   };
 
   const handleSubmit = async (e) => {
@@ -285,18 +302,18 @@ function EvaluationForm() {
         />
       )}
 
-      <div className="relative z-10 px-6 py-10">
-        <div className="flex justify-end mb-6 max-w-[1100px] mx-auto">
-          <span className="font-['Inter'] text-3xl text-[#7B5CF0] tracking-[-1px]">
+      <div className="relative z-10 px-6 pt-5 pb-10">
+        <div className="flex justify-end mb-4 max-w-[1100px] mx-auto">
+          <span className="font-['Inter'] text-[24px] text-[#7B5CF0] tracking-[-1px]">
             ScoutScholar
           </span>
         </div>
 
-        {status === "loading" ? (
-          <AnticipationScreen />
+        {status === "loading" || results ? (
+          <ConversationScreen status={status} results={results} onEdit={handleEdit} />
         ) : (
-        <div className="max-w-[1100px] mx-auto rounded-xl shadow-[0_8px_24px_rgba(26,22,37,0.1)] bg-gradient-to-br from-[rgba(244,244,244,0.38)] to-[rgba(248,247,255,0.38)] p-8">
-          <div className="flex items-center gap-4 mb-8">
+        <div className="max-w-[1100px] mx-auto rounded-xl shadow-[0_8px_24px_rgba(26,22,37,0.1)] bg-gradient-to-br from-[rgba(244,244,244,0.38)] to-[rgba(248,247,255,0.38)] p-6">
+          <div className="flex items-center gap-4 mb-4">
             {!greetingFailed ? (
               <img
                 src={scoutGreeting}
@@ -507,9 +524,10 @@ function EvaluationForm() {
                         const isChecked =
                           option === "Other"
                             ? isOtherProgramChecked
-                            : formData.target_programs.includes(option);
-                        const disableUnchecked =
-                          !isChecked && formData.target_programs.length >= MAX_PROGRAMS;
+                            : selectedPrograms.includes(option);
+                        const totalSelected =
+                          selectedPrograms.length + (isOtherProgramChecked ? 1 : 0);
+                        const disableUnchecked = !isChecked && totalSelected >= MAX_PROGRAMS;
 
                         return (
                           <button
@@ -567,18 +585,18 @@ function EvaluationForm() {
             </div>
 
             {/* Test Scores bar + Submit button */}
-            <div className="mt-6 flex flex-col md:flex-row gap-4 items-stretch">
-              <fieldset className="flex-1 rounded-xl bg-[#F2F0FE] p-4">
+            <div className="mt-6 flex flex-col md:flex-row gap-4 items-center">
+              <fieldset className="flex-1 w-full rounded-xl bg-[#F2F0FE] p-4">
                 <div className="flex flex-col md:flex-row md:items-center gap-4 flex-wrap">
-                  <legend className="flex items-center gap-2 font-['Inter'] font-semibold text-lg text-[#272728]">
+                  <legend className="flex items-center gap-2 font-['Inter'] font-semibold text-[18px] text-[#272728]">
                     <FileCheck className="w-5 h-5 text-[#7B5CF0]" />
                     Test Scores
-                    <span className="font-['Inter'] font-medium text-xs text-[#7B5CF0] bg-[#F2F0FE] rounded-full px-2.5 py-0.5">
+                    <span className="font-['Inter'] text-xs text-[#4C2FB8] bg-gradient-to-br from-[#F8F7FF] to-[#A99AF4] rounded-full px-2.5 py-1">
                       Optional
                     </span>
                   </legend>
                   <div className="flex flex-wrap items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm text-[#272728]">
+                    <label className="flex items-center gap-2 text-xs text-[#272728]">
                       <input
                         type="radio"
                         name="test_score_taken"
@@ -588,7 +606,7 @@ function EvaluationForm() {
                       />
                       Yes
                     </label>
-                    <label className="flex items-center gap-2 text-sm text-[#272728]">
+                    <label className="flex items-center gap-2 text-xs text-[#272728]">
                       <input
                         type="radio"
                         name="test_score_taken"
@@ -600,11 +618,11 @@ function EvaluationForm() {
                     </label>
                     {formData.test_score.taken === true && (
                       <>
-                        <SelectField className="w-36">
+                        <SelectField className="max-w-[168px] w-full">
                           <select
                             value={formData.test_score.type}
                             onChange={handleTestTypeChange}
-                            className={`w-full ${selectBase}`}
+                            className={`w-full ${compactSelectBase}`}
                           >
                             <option value="">Select test</option>
                             {TEST_TYPE_OPTIONS.map((option) => (
@@ -619,7 +637,7 @@ function EvaluationForm() {
                           placeholder="e.g 330 or 7.5"
                           value={formData.test_score.score ?? ""}
                           onChange={handleTestScoreValueChange}
-                          className={`w-32 ${inputBase}`}
+                          className={`max-w-[94px] w-full ${compactInputBase}`}
                         />
                       </>
                     )}
@@ -629,9 +647,9 @@ function EvaluationForm() {
 
               <button
                 type="submit"
-                className="bg-[#7B5CF0] hover:bg-[#6545E0] text-white font-['Inter'] font-semibold text-2xl rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer border-none whitespace-nowrap shadow-[0_2px_4px_rgba(26,22,37,0.08)] transition-colors"
+                className="max-w-[239px] w-full bg-[#7B5CF0] text-white font-['Inter'] font-semibold text-2xl rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer border-none whitespace-nowrap shadow-[0_2px_4px_rgba(26,22,37,0.08)]"
               >
-                Get Evaluation <ArrowRight className="w-7 h-7" />
+                Get Evaluation <ArrowRight className="w-[30px] h-[30px]" />
               </button>
             </div>
 
@@ -664,11 +682,6 @@ function EvaluationForm() {
               >
                 Try Again
               </button>
-            </div>
-          )}
-          {results && (
-            <div className="mt-6">
-              <ResultCards results={results} />
             </div>
           )}
         </div>
