@@ -139,6 +139,30 @@ const profiles = [
     ],
   },
   {
+    label: 'GMAT 310 (in-range but low) — expect input_review.status "ok"',
+    payload: {
+      degree: "B.Com",
+      institution: "Delhi University",
+      major: "Business Administration",
+      cgpa: 7.0,
+      year_of_graduation: 2026,
+      destination: "US",
+      target_programs: ["MBA"],
+      target_intake: "Fall 2027",
+      test_score: { taken: true, type: "GMAT", score: 310 },
+    },
+    extraChecks: [
+      {
+        name: 'input_review.status === "ok"',
+        fn: (p) => p?.input_review?.status === "ok",
+      },
+      {
+        name: "low GMAT score addressed in gaps, not input_review",
+        fn: (p) => p?.input_review?.message === "" && Array.isArray(p?.gaps),
+      },
+    ],
+  },
+  {
     label: 'Normal control profile — expect input_review.status "ok"',
     payload: {
       degree: "B.Tech",
